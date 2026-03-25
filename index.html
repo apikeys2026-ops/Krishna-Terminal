@@ -518,6 +518,40 @@ async function fetchWorker() {
   // ETHU
   if(d.ethu) updatePos(d.ethu.price, null);
 
+  // Commodities (from /all)
+  if(d.brent) {
+    const bp=d.brent;
+    $('brentP').textContent='$'+f2(bp); $('brentBig').textContent='$'+f2(bp);
+    $('brentMap').textContent='$'+f2(bp); $('ts2').textContent=tsNow();
+    let col,sig,msg;
+    if(bp>95){col='var(--muted)';sig='NO DEAL PRESSURE';msg='Brent too high. Iran deal unlikely.';}
+    else if(bp>90){col='var(--yellow)';sig='TALKS POSSIBLE';msg='⚠ Brent in watch zone. Diplomacy may accelerate.';}
+    else if(bp>85){col='var(--orange)';sig='DEAL LIKELY';msg='⚡ Brent pressure building. Thursday talks serious.';}
+    else{col='var(--red)';sig='DEAL URGENT';msg='🚨 Critical level. ETH catalyst imminent.';}
+    $('oilSig').textContent=sig; $('oilSig').style.color=col;
+    $('brentBigLbl').textContent=sig; $('brentBigLbl').style.color=col;
+    $('brentBig').style.color=col; $('brentMapSig').textContent=sig; $('brentMapSig').style.color=col;
+    $('brentBigMsg').textContent=msg;
+    $('dealProb').textContent=bp>95?'15%':bp>90?'35%':bp>85?'65%':'85%';
+    $('tacoFill').style.width=(bp>95?15:bp>90?35:bp>85?65:85)+'%';
+    $('tacoVal').textContent=bp>90?'HALF-TACO':bp>85?'FULL-TACO (FORMING)':'FULL TACO';
+  }
+  if(d.wti)    $('wtiP').textContent='$'+f2(d.wti);
+  if(d.gold)   { $('goldP').textContent='$'+f2(d.gold,0); $('ts2b').textContent=tsNow(); }
+  if(d.silver) $('silverP').textContent='$'+f2(d.silver,2);
+
+  // Indices (from /all)
+  if(d.spx) { $('spxP').textContent=f2(d.spx,2); $('ts3').textContent=tsNow(); }
+  if(d.dji) $('djiP').textContent=f2(d.dji,0);
+  if(d.ndx) $('ndxP').textContent=f2(d.ndx,2);
+  if(d.vix) $('vixP').textContent=f2(d.vix,2);
+  if(d.dxy) {
+    $('dxyP').textContent=f2(d.dxy,2);
+    $('dxySig').textContent=d.dxy<100?'🟢 Weak USD — ETH tailwind':d.dxy<104?'🟡 Neutral':'🔴 Strong USD — ETH headwind';
+    $('dxyEth').textContent=d.dxy<102?'Favorable':d.dxy<105?'Neutral':'Headwind';
+  }
+  if(d.spx) { $('eqMood').textContent='🟢 Risk-on'; $('riskLvl').textContent='🟢 LOW — favorable for ETH'; }
+
   // Macro
   if(d.y10!=null) {
     $('y10').textContent = f2(d.y10,2)+'%';
@@ -550,15 +584,9 @@ async function fetchWorker() {
 // FETCH COMMODITIES (browser direct — Twelve Data allows browser calls)
 // ═══════════════════════════════════
 async function fetchCommodities() {
-  const [brent, wti, gold, silver] = await Promise.all([
-    get(`https://api.twelvedata.com/price?symbol=XBR%2FUSD&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=XTI%2FUSD&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=XAU%2FUSD&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=XAG%2FUSD&apikey=${TWELVE}`),
-  ]);
-
-  const p = d => d?.price ? parseFloat(d.price) : null;
-  const bp=p(brent), wp=p(wti), gp=p(gold), sp=p(silver);
+  const d = await get(WORKER+'/commodities');
+  if(!d) return;
+  const bp=d.brent, wp=d.wti, gp=d.gold, sp=d.silver;
 
   if(bp) {
     $('brentP').textContent='$'+f2(bp); $('brentBig').textContent='$'+f2(bp);
@@ -617,15 +645,9 @@ async function fetchCryptoAll() { await Promise.all([fetchWorker(), fetchDeribit
 // FETCH INDICES (browser direct)
 // ═══════════════════════════════════
 async function fetchIndices() {
-  const [spx,dji,ndx,vix,dxy] = await Promise.all([
-    get(`https://api.twelvedata.com/price?symbol=SPX&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=DJI&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=IXIC&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=VIX&apikey=${TWELVE}`),
-    get(`https://api.twelvedata.com/price?symbol=DXY&apikey=${TWELVE}`),
-  ]);
-  const p=d=>d?.price?parseFloat(d.price):null;
-  const sp=p(spx),dp=p(dji),np=p(ndx),vp=p(vix),dxp=p(dxy);
+  const d = await get(WORKER+'/indices');
+  if(!d) return;
+  const sp=d.spx, dp=d.dji, np=d.ndx, vp=d.vix, dxp=d.dxy;
   if(sp){$('spxP').textContent=f2(sp,2);$('ts3').textContent=tsNow();}
   if(dp) $('djiP').textContent=f2(dp,0);
   if(np) $('ndxP').textContent=f2(np,2);
